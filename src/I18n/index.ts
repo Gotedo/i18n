@@ -215,29 +215,37 @@ export class I18n extends Formatter implements I18nContract {
     }
   }
 
+  private resolveIdentifierContext(identifier: string, context?: string): string {
+    if (!context) {
+      return identifier
+    }
+    return `${identifier}_${context.toLocaleLowerCase()}`
+  }
+
   /**
    * Formats a message using the messages formatter
    */
   public formatMessage(
     identifier: string,
-    data?: Record<string, any>,
+    data?: Record<string, any> & { context?: string },
     fallbackMessage?: string
   ): string {
     this.lazyLoadTranslations()
-    const message = this.getMessage(identifier)
+    const resolvedIdentifier = this.resolveIdentifierContext(identifier, data?.context)
+    const message = this.getMessage(resolvedIdentifier)
 
     /**
      * Notify about the message translation
      */
     if (!message || message.isFallback) {
-      this.notifyForMissingTranslation(identifier, message?.isFallback || false)
+      this.notifyForMissingTranslation(resolvedIdentifier, message?.isFallback || false)
     }
 
     /**
-     * Return identifier when message is missing, and config is set to return key as fallback
+     * Return resolvedIdentifier when message is missing, and config is set to return key as fallback
      */
     if (this.i18nManager.config?.fallback && !message) {
-      return this.i18nManager.config.fallback(identifier, this.locale)
+      return this.i18nManager.config.fallback(resolvedIdentifier, this.locale)
     }
 
     /**

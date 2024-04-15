@@ -241,7 +241,11 @@ declare module '@ioc:Adonis/Addons/I18n' {
      * fallback language is used when the message from current
      * locale is missing.
      */
-    formatMessage(identifier: string, data?: Record<string, any>, fallbackMessage?: string): string
+    formatMessage(
+      identifier: string,
+      data?: Record<string, any> & { context?: string },
+      fallbackMessage?: string
+    ): string
 
     /**
      * Shorthand method for formatUsage

@@ -128,7 +128,12 @@ test.group('Fs loader | JSON', (group) => {
     try {
       await fsLoader.load()
     } catch (error) {
-      assert.equal(error.message, 'Unexpected token } in JSON at position 10')
+      assert.isTrue(
+        [
+          'Expected double-quoted property name in JSON at position 10',
+          'Unexpected token } in JSON at position 10',
+        ].includes(error.message)
+      )
     }
   })
 })
