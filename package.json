@@ -118,9 +118,9 @@
         "reloadServer": true
       }
     ],
-    "types": "@adonisjs/i18n",
+    "types": "@gotedo/i18n",
     "providers": [
-      "@adonisjs/i18n"
+      "@gotedo/i18n"
     ]
   },
   "publishConfig": {
