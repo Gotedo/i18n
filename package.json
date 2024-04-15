@@ -1,6 +1,6 @@
 {
   "name": "@gotedo/i18n",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "Internationalization for AdonisJS apps",
   "main": "build/providers/I18nProvider.js",
   "files": [
@@ -79,7 +79,7 @@
       "path": "cz-conventional-changelog"
     }
   },
-    "np": {
+  "np": {
     "yarn": false,
     "yolo": true,
     "contents": ".",
