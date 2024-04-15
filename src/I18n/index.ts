@@ -228,40 +228,50 @@ export class I18n extends Formatter implements I18nContract {
     }
 
     let pluralConfig = this.i18nManager.config.plurals
-    pluralConfig = Object.entries(pluralConfig).reduce((prev, [key, value]) => {
+    pluralConfig = Object.entries(pluralConfig || {}).reduce((prev, [key, value]) => {
       prev[key] = value.toLocaleLowerCase()
       return prev
-    }, {} as typeof pluralConfig)
+    }, {})
 
-    const existingIdentifierPlurals = Object.values(pluralConfig).reduce((prev, cur) => {
-      const currentIdentifier = `${identifier}_${cur}`
-      if (this.localeTranslations[currentIdentifier]) {
-        prev[cur] = currentIdentifier
-      }
-      return prev
-    }, {} as typeof pluralConfig)
+    const existingIdentifierPlurals: typeof pluralConfig = Object.values(pluralConfig || {}).reduce(
+      (prev, cur) => {
+        const currentIdentifier = `${identifier}_${cur}`
+        if (this.localeTranslations[currentIdentifier]) {
+          prev[cur] = currentIdentifier
+        }
+        return prev
+      },
+      {}
+    )
 
+    // @ts-ignore
     if (count === 0 && existingIdentifierPlurals[pluralConfig['zero']]) {
       return `${identifier}_${pluralConfig['zero']}`
     }
+    // @ts-ignore
     if (count === 1 && existingIdentifierPlurals[pluralConfig['one']]) {
       return `${identifier}_${pluralConfig['one']}`
     }
+    // @ts-ignore
     if (count === 2 && existingIdentifierPlurals[pluralConfig['two']]) {
       return `${identifier}_${pluralConfig['two']}`
     }
+    // @ts-ignore
     if (count === 3 && existingIdentifierPlurals[pluralConfig['three']]) {
       return `${identifier}_${pluralConfig['three']}`
     }
 
+    // @ts-ignore
     if (count > 3 && count < 11 && existingIdentifierPlurals[pluralConfig['few']]) {
       return `${identifier}_${pluralConfig['few']}`
     }
 
+    // @ts-ignore
     if (count >= 11 && count < 100 && existingIdentifierPlurals[pluralConfig['many']]) {
       return `${identifier}_${pluralConfig['many']}`
     }
 
+    // @ts-ignore
     if (existingIdentifierPlurals[pluralConfig['other']]) {
       return `${identifier}_${pluralConfig['other']}`
     }

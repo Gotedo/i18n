@@ -49,7 +49,7 @@ test.group('I18n', (group) => {
   })
 
   test('format a message by its identifier and context: {$self}')
-    .with(['join', 'leave', 'Join', 'Leave'] as const)
+    .with(['join', 'leave', 'Join', 'Leave'])
     .run(async ({ assert }, requestType) => {
       const app = await setup()
       const emitter = app.container.resolveBinding('Adonis/Core/Event')
@@ -87,7 +87,7 @@ test.group('I18n', (group) => {
     })
 
   test('format a message by its identifier and plurals: {$self}')
-    .with([0, 1, 100] as const)
+    .with([0, 1, 100])
     .run(async ({ assert }, count) => {
       const app = await setup()
       const emitter = app.container.resolveBinding('Adonis/Core/Event')
@@ -128,7 +128,7 @@ test.group('I18n', (group) => {
     })
 
   test('format a message by its identifier and plurals: {$self}')
-    .with([0, 1, 2, 3, 5, 20, 200] as const)
+    .with([0, 1, 2, 3, 5, 20, 200])
     .run(async ({ assert }, count) => {
       const app = await setup()
       const emitter = app.container.resolveBinding('Adonis/Core/Event')
@@ -181,7 +181,7 @@ test.group('I18n', (group) => {
     })
 
   test('format a message by its identifier and plurals with custom plural keys: {$self}')
-    .with([0, 1, 2, 3, 5, 20, 200] as const)
+    .with([0, 1, 2, 3, 5, 20, 200])
     .run(async ({ assert }, count) => {
       const app = await setup()
       const emitter = app.container.resolveBinding('Adonis/Core/Event')
