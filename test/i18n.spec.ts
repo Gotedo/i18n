@@ -86,6 +86,191 @@ test.group('I18n', (group) => {
       )
     })
 
+  test('format a message by its identifier and plurals: {$self}')
+    .with([0, 1, 100] as const)
+    .run(async ({ assert }, count) => {
+      const app = await setup()
+      const emitter = app.container.resolveBinding('Adonis/Core/Event')
+      const logger = app.container.resolveBinding('Adonis/Core/Logger')
+
+      await fs.add(
+        'resources/lang/en/messages.json',
+        JSON.stringify({
+          request_approval_zero: 'No request was approved',
+          request_approval_one: 'One (1) request was approved',
+          request_approval_other: '{count} requests were approved',
+        })
+      )
+
+      const i18nManager = new I18nManager(app, emitter, logger, {
+        defaultLocale: 'en',
+        translationsFormat: 'icu',
+        provideValidatorMessages: true,
+        loaders: {
+          fs: {
+            enabled: true,
+            location: join(fs.basePath, 'resources/lang'),
+          },
+        },
+      })
+
+      await i18nManager.loadTranslations()
+
+      const i18n = new I18n('en', emitter, logger, i18nManager)
+      assert.equal(
+        i18n.formatMessage('messages.request_approval', { count }),
+        count === 0
+          ? 'No request was approved'
+          : count === 1
+          ? 'One (1) request was approved'
+          : '100 requests were approved'
+      )
+    })
+
+  test('format a message by its identifier and plurals: {$self}')
+    .with([0, 1, 2, 3, 5, 20, 200] as const)
+    .run(async ({ assert }, count) => {
+      const app = await setup()
+      const emitter = app.container.resolveBinding('Adonis/Core/Event')
+      const logger = app.container.resolveBinding('Adonis/Core/Logger')
+
+      await fs.add(
+        'resources/lang/en/messages.json',
+        JSON.stringify({
+          request_approval_zero: 'No request was approved',
+          request_approval_one: 'One (1) request was approved',
+          request_approval_two: 'Two (2) requests were approved',
+          request_approval_three: 'Three (3) requests were approved',
+          request_approval_few: 'Few requests were approved',
+          request_approval_many: 'Many requests were approved',
+          request_approval_other: '{count} requests were approved',
+        })
+      )
+
+      const i18nManager = new I18nManager(app, emitter, logger, {
+        defaultLocale: 'en',
+        translationsFormat: 'icu',
+        provideValidatorMessages: true,
+        loaders: {
+          fs: {
+            enabled: true,
+            location: join(fs.basePath, 'resources/lang'),
+          },
+        },
+      })
+
+      await i18nManager.loadTranslations()
+
+      const i18n = new I18n('en', emitter, logger, i18nManager)
+      assert.equal(
+        i18n.formatMessage('messages.request_approval', { count }),
+        count === 0
+          ? 'No request was approved'
+          : count === 1
+          ? 'One (1) request was approved'
+          : count === 2
+          ? 'Two (2) requests were approved'
+          : count === 3
+          ? 'Three (3) requests were approved'
+          : count === 5
+          ? 'Few requests were approved'
+          : count === 20
+          ? 'Many requests were approved'
+          : '200 requests were approved'
+      )
+    })
+
+  test('format a message by its identifier and plurals with custom plural keys: {$self}')
+    .with([0, 1, 2, 3, 5, 20, 200] as const)
+    .run(async ({ assert }, count) => {
+      const app = await setup()
+      const emitter = app.container.resolveBinding('Adonis/Core/Event')
+      const logger = app.container.resolveBinding('Adonis/Core/Logger')
+
+      await fs.add(
+        'resources/lang/en/messages.json',
+        JSON.stringify({
+          request_approval_zéro: 'No request was approved',
+          request_approval_un: 'One (1) request was approved',
+          request_approval_deux: 'Two (2) requests were approved',
+          request_approval_trois: 'Three (3) requests were approved',
+          request_approval_peu: 'Few requests were approved',
+          request_approval_beaucoup: 'Many requests were approved',
+          request_approval_autre: '{count} requests were approved',
+        })
+      )
+
+      const i18nManager = new I18nManager(app, emitter, logger, {
+        defaultLocale: 'en',
+        translationsFormat: 'icu',
+        provideValidatorMessages: true,
+        loaders: {
+          fs: {
+            enabled: true,
+            location: join(fs.basePath, 'resources/lang'),
+          },
+        },
+        plurals: {
+          zero: 'zéro',
+          one: 'un',
+          two: 'deux',
+          three: 'trois',
+          few: 'peu',
+          many: 'beaucoup',
+          other: 'autre',
+        },
+      })
+
+      await i18nManager.loadTranslations()
+
+      const i18n = new I18n('en', emitter, logger, i18nManager)
+      assert.equal(
+        i18n.formatMessage('messages.request_approval', { count }),
+        count === 0
+          ? 'No request was approved'
+          : count === 1
+          ? 'One (1) request was approved'
+          : count === 2
+          ? 'Two (2) requests were approved'
+          : count === 3
+          ? 'Three (3) requests were approved'
+          : count === 5
+          ? 'Few requests were approved'
+          : count === 20
+          ? 'Many requests were approved'
+          : '200 requests were approved'
+      )
+    })
+
+  test('should return translation error string if no count identifier is provided', async ({
+    assert,
+  }) => {
+    const app = await setup()
+    const emitter = app.container.resolveBinding('Adonis/Core/Event')
+    const logger = app.container.resolveBinding('Adonis/Core/Logger')
+
+    const i18nManager = new I18nManager(app, emitter, logger, {
+      defaultLocale: 'en',
+      translationsFormat: 'icu',
+      provideValidatorMessages: true,
+      loaders: {
+        fs: {
+          enabled: true,
+          location: join(fs.basePath, 'resources/lang'),
+        },
+      },
+    })
+
+    await i18nManager.loadTranslations()
+
+    const i18n = new I18n('en', emitter, logger, i18nManager)
+
+    assert.equal(
+      i18n.formatMessage('messages.request_approval', { count: 2 }),
+      'translation missing: en, messages.request_approval'
+    )
+  })
+
   test('format a message by its identifier using short method i18n.t()', async ({ assert }) => {
     const app = await setup()
     const emitter = app.container.resolveBinding('Adonis/Core/Event')

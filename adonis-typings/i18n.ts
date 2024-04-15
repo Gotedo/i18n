@@ -199,6 +199,8 @@ declare module '@ioc:Adonis/Addons/I18n' {
         enabled: boolean
       } & FsLoaderOptions
     } & Record<string, { enabled: boolean } & Record<any, any>>
+
+    plurals?: I18nPluralConfig
   }
 
   /**
@@ -243,7 +245,7 @@ declare module '@ioc:Adonis/Addons/I18n' {
      */
     formatMessage(
       identifier: string,
-      data?: Record<string, any> & { context?: string },
+      data?: Record<string, any> & { context?: string; count?: number },
       fallbackMessage?: string
     ): string
 
@@ -359,6 +361,16 @@ declare module '@ioc:Adonis/Addons/I18n' {
       callback: FormatterExtendCallback | LoaderExtendCallback
     ): void
   }
+
+  export type I18nPluralConfig = Partial<{
+    zero: string
+    one: string
+    two: string
+    three: string
+    few: string
+    many: string
+    other: string
+  }>
 
   const I18n: I18nManagerContract
   export default I18n

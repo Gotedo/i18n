@@ -215,11 +215,58 @@ export class I18n extends Formatter implements I18nContract {
     }
   }
 
-  private resolveIdentifierContext(identifier: string, context?: string): string {
+  private resolveContextIdentifier(identifier: string, context?: string): string {
     if (!context) {
       return identifier
     }
     return `${identifier}_${context.toLocaleLowerCase()}`
+  }
+
+  private resolvePluralIdentifier(identifier: string, count?: number): string {
+    if (typeof count === 'undefined') {
+      return identifier
+    }
+
+    let pluralConfig = this.i18nManager.config.plurals
+    pluralConfig = Object.entries(pluralConfig).reduce((prev, [key, value]) => {
+      prev[key] = value.toLocaleLowerCase()
+      return prev
+    }, {} as typeof pluralConfig)
+
+    const existingIdentifierPlurals = Object.values(pluralConfig).reduce((prev, cur) => {
+      const currentIdentifier = `${identifier}_${cur}`
+      if (this.localeTranslations[currentIdentifier]) {
+        prev[cur] = currentIdentifier
+      }
+      return prev
+    }, {} as typeof pluralConfig)
+
+    if (count === 0 && existingIdentifierPlurals[pluralConfig['zero']]) {
+      return `${identifier}_${pluralConfig['zero']}`
+    }
+    if (count === 1 && existingIdentifierPlurals[pluralConfig['one']]) {
+      return `${identifier}_${pluralConfig['one']}`
+    }
+    if (count === 2 && existingIdentifierPlurals[pluralConfig['two']]) {
+      return `${identifier}_${pluralConfig['two']}`
+    }
+    if (count === 3 && existingIdentifierPlurals[pluralConfig['three']]) {
+      return `${identifier}_${pluralConfig['three']}`
+    }
+
+    if (count > 3 && count < 11 && existingIdentifierPlurals[pluralConfig['few']]) {
+      return `${identifier}_${pluralConfig['few']}`
+    }
+
+    if (count >= 11 && count < 100 && existingIdentifierPlurals[pluralConfig['many']]) {
+      return `${identifier}_${pluralConfig['many']}`
+    }
+
+    if (existingIdentifierPlurals[pluralConfig['other']]) {
+      return `${identifier}_${pluralConfig['other']}`
+    }
+
+    return identifier
   }
 
   /**
@@ -227,25 +274,26 @@ export class I18n extends Formatter implements I18nContract {
    */
   public formatMessage(
     identifier: string,
-    data?: Record<string, any> & { context?: string },
+    data?: Record<string, any> & { context?: string; count?: number },
     fallbackMessage?: string
   ): string {
     this.lazyLoadTranslations()
-    const resolvedIdentifier = this.resolveIdentifierContext(identifier, data?.context)
-    const message = this.getMessage(resolvedIdentifier)
+    const contextIdentifier = this.resolveContextIdentifier(identifier, data?.context)
+    const pluralIdentifier = this.resolvePluralIdentifier(contextIdentifier, data?.count)
+    const message = this.getMessage(pluralIdentifier)
 
     /**
      * Notify about the message translation
      */
     if (!message || message.isFallback) {
-      this.notifyForMissingTranslation(resolvedIdentifier, message?.isFallback || false)
+      this.notifyForMissingTranslation(pluralIdentifier, message?.isFallback || false)
     }
 
     /**
-     * Return resolvedIdentifier when message is missing, and config is set to return key as fallback
+     * Return identifier when message is missing, and config is set to return key as fallback
      */
     if (this.i18nManager.config?.fallback && !message) {
-      return this.i18nManager.config.fallback(resolvedIdentifier, this.locale)
+      return this.i18nManager.config.fallback(pluralIdentifier, this.locale)
     }
 
     /**

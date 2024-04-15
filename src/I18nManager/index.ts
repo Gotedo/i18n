@@ -21,6 +21,7 @@ import {
   LoaderExtendCallback,
   FormatterExtendCallback,
   TranslationsFormatterContract,
+  I18nPluralConfig,
 } from '@ioc:Adonis/Addons/I18n'
 
 import { I18n } from '../I18n'
@@ -28,8 +29,22 @@ import { prettyPrint } from '../Helpers'
 import { FsLoader } from '../Loaders/Fs'
 import { language } from '../Negotiator'
 import { IcuFormatter } from '../Formatters/Message/Icu'
+import merge from 'lodash/merge'
 
 export class I18nManager implements I18nManagerContract {
+  /**
+   * Sane defaults for plurals
+   */
+  private static defaultPluralConfig: I18nPluralConfig = {
+    zero: 'zero',
+    one: 'one',
+    two: 'two',
+    three: 'three',
+    few: 'few',
+    many: 'many',
+    other: 'other',
+  }
+
   /**
    * A set of formatters added from outside in
    */
@@ -106,6 +121,8 @@ export class I18nManager implements I18nManagerContract {
     if (!this.config.translationsFormat) {
       throw new Exception('Missing "translationsFormat" value inside "config/i18n.ts" file')
     }
+
+    this.config.plurals = merge(I18nManager.defaultPluralConfig, this.config.plurals || {})
   }
 
   /**

@@ -9,7 +9,10 @@ jobs:
       matrix:
         node-version:
           - 14.17.0
+          - 16.x
           - 17.x
+          - 18.x
+          - 20.x
     steps:
       - uses: actions/checkout@v2
       - name: Use Node.js ${{ matrix.node-version }}
@@ -26,7 +29,10 @@ jobs:
       matrix:
         node-version:
           - 14.17.0
+          - 16.x
           - 17.x
+          - 18.x
+          - 20.x
     steps:
       - uses: actions/checkout@v2
       - name: Use Node.js ${{ matrix.node-version }}
