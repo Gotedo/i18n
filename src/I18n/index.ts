@@ -222,9 +222,19 @@ export class I18n extends Formatter implements I18nContract {
     return `${identifier}_${context.toLocaleLowerCase()}`
   }
 
-  private resolvePluralIdentifier(identifier: string, count?: number): string {
+  private resolvePluralIdentifier(
+    identifier: string,
+    count?: number | string
+  ): string | { missingKey: string; expectedFallbackIdentifier?: string } {
     if (typeof count === 'undefined') {
       return identifier
+    }
+
+    if (typeof count === 'string') {
+      count = Number(count)
+      if (isNaN(count)) {
+        throw new Error('"count" is not an number')
+      }
     }
 
     let pluralConfig = this.i18nManager.config.plurals
@@ -244,39 +254,62 @@ export class I18n extends Formatter implements I18nContract {
       {}
     )
 
-    // @ts-ignore
-    if (count === 0 && existingIdentifierPlurals[pluralConfig['zero']]) {
-      return `${identifier}_${pluralConfig['zero']}`
-    }
-    // @ts-ignore
-    if (count === 1 && existingIdentifierPlurals[pluralConfig['one']]) {
-      return `${identifier}_${pluralConfig['one']}`
-    }
-    // @ts-ignore
-    if (count === 2 && existingIdentifierPlurals[pluralConfig['two']]) {
-      return `${identifier}_${pluralConfig['two']}`
-    }
-    // @ts-ignore
-    if (count === 3 && existingIdentifierPlurals[pluralConfig['three']]) {
-      return `${identifier}_${pluralConfig['three']}`
+    const expectedFallbackIdentifier = `${identifier}_${pluralConfig['other']}`
+
+    function getFallback(missingKey: string) {
+      if (existingIdentifierPlurals[pluralConfig!['other']!]) {
+        return expectedFallbackIdentifier
+      }
+      return {
+        missingKey,
+        expectedFallbackIdentifier,
+      }
     }
 
-    // @ts-ignore
-    if (count > 3 && count < 11 && existingIdentifierPlurals[pluralConfig['few']]) {
-      return `${identifier}_${pluralConfig['few']}`
+    if (count === 0) {
+      if (existingIdentifierPlurals[pluralConfig['zero']!]) {
+        return `${identifier}_${pluralConfig['zero']}`
+      } else {
+        return { missingKey: `${identifier}_${pluralConfig['zero']}` }
+      }
     }
 
-    // @ts-ignore
-    if (count >= 11 && count < 100 && existingIdentifierPlurals[pluralConfig['many']]) {
-      return `${identifier}_${pluralConfig['many']}`
+    if (count === 1) {
+      if (existingIdentifierPlurals[pluralConfig['one']!]) {
+        return `${identifier}_${pluralConfig['one']}`
+      }
+      return getFallback(`${identifier}_${pluralConfig['one']}`)
     }
 
-    // @ts-ignore
-    if (existingIdentifierPlurals[pluralConfig['other']]) {
-      return `${identifier}_${pluralConfig['other']}`
+    if (count === 2) {
+      if (existingIdentifierPlurals[pluralConfig['two']!]) {
+        return `${identifier}_${pluralConfig['two']}`
+      }
+      return getFallback(`${identifier}_${pluralConfig['two']}`)
     }
 
-    return identifier
+    if (count === 3) {
+      if (existingIdentifierPlurals[pluralConfig['three']!]) {
+        return `${identifier}_${pluralConfig['three']}`
+      }
+      return getFallback(`${identifier}_${pluralConfig['three']}`)
+    }
+
+    if (count > 3 && count < 11) {
+      if (existingIdentifierPlurals[pluralConfig['few']!]) {
+        return `${identifier}_${pluralConfig['few']}`
+      }
+      return getFallback(`${identifier}_${pluralConfig['few']}`)
+    }
+
+    if (count >= 11 && count < 100) {
+      if (existingIdentifierPlurals[pluralConfig['many']!]) {
+        return `${identifier}_${pluralConfig['many']}`
+      }
+      return getFallback(`${identifier}_${pluralConfig['many']}`)
+    }
+
+    return getFallback(expectedFallbackIdentifier)
   }
 
   /**
@@ -288,22 +321,48 @@ export class I18n extends Formatter implements I18nContract {
     fallbackMessage?: string
   ): string {
     this.lazyLoadTranslations()
-    const contextIdentifier = this.resolveContextIdentifier(identifier, data?.context)
-    const pluralIdentifier = this.resolvePluralIdentifier(contextIdentifier, data?.count)
-    const message = this.getMessage(pluralIdentifier)
+    let resolvedIdentifier = ''
+    let expectedFallbackIdentifier = ''
+
+    const fallback = (missingKey: string) => {
+      return (
+        fallbackMessage ||
+        `translation missing: ${this.locale}, ${missingKey}${
+          expectedFallbackIdentifier
+            ? `. expected fallback identifier: ${expectedFallbackIdentifier}`
+            : ''
+        }`
+      )
+    }
+
+    if (data && 'context' in data) {
+      resolvedIdentifier = this.resolveContextIdentifier(identifier, data?.context)
+    } else if (data && 'count' in data) {
+      const resolvedCountIdentifier = this.resolvePluralIdentifier(identifier, data?.count)
+      if (typeof resolvedCountIdentifier === 'string') {
+        resolvedIdentifier = resolvedCountIdentifier
+      } else {
+        resolvedIdentifier = resolvedCountIdentifier.missingKey
+        expectedFallbackIdentifier = resolvedCountIdentifier.expectedFallbackIdentifier || ''
+      }
+    } else {
+      resolvedIdentifier = identifier
+    }
+
+    const message = this.getMessage(resolvedIdentifier)
 
     /**
      * Notify about the message translation
      */
     if (!message || message.isFallback) {
-      this.notifyForMissingTranslation(pluralIdentifier, message?.isFallback || false)
+      this.notifyForMissingTranslation(resolvedIdentifier, message?.isFallback || false)
     }
 
     /**
      * Return identifier when message is missing, and config is set to return key as fallback
      */
     if (this.i18nManager.config?.fallback && !message) {
-      return this.i18nManager.config.fallback(pluralIdentifier, this.locale)
+      return this.i18nManager.config.fallback(resolvedIdentifier, this.locale)
     }
 
     /**
@@ -311,7 +370,7 @@ export class I18n extends Formatter implements I18nContract {
      * as well
      */
     if (!message) {
-      return fallbackMessage || `translation missing: ${this.locale}, ${identifier}`
+      return fallback(resolvedIdentifier)
     }
 
     return this.formatRawMessage(message.message, data)

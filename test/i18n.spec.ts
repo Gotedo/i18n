@@ -240,36 +240,103 @@ test.group('I18n', (group) => {
           ? 'Many requests were approved'
           : '200 requests were approved'
       )
+
+      // @ts-ignore
+      i18nManager.config = {}
     })
 
-  test('should return translation error string if no count identifier is provided', async ({
-    assert,
-  }) => {
-    const app = await setup()
-    const emitter = app.container.resolveBinding('Adonis/Core/Event')
-    const logger = app.container.resolveBinding('Adonis/Core/Logger')
+  test(
+    'format a message using the "other" plural identifier if expected count identifier is not provided: {$self}'
+  )
+    .with([0, 1, 2, 3, 10, 200])
+    .run(async ({ assert }, count) => {
+      const app = await setup()
+      const emitter = app.container.resolveBinding('Adonis/Core/Event')
+      const logger = app.container.resolveBinding('Adonis/Core/Logger')
 
-    const i18nManager = new I18nManager(app, emitter, logger, {
-      defaultLocale: 'en',
-      translationsFormat: 'icu',
-      provideValidatorMessages: true,
-      loaders: {
-        fs: {
-          enabled: true,
-          location: join(fs.basePath, 'resources/lang'),
+      await fs.add(
+        'resources/lang/en/messages.json',
+        JSON.stringify({
+          request_approval_zero: 'No request was approved',
+          request_approval_other: 'Many requests were approved',
+        })
+      )
+
+      const i18nManager = new I18nManager(app, emitter, logger, {
+        defaultLocale: 'en',
+        translationsFormat: 'icu',
+        provideValidatorMessages: true,
+        loaders: {
+          fs: {
+            enabled: true,
+            location: join(fs.basePath, 'resources/lang'),
+          },
         },
-      },
+        plurals: {
+          zero: 'zero',
+          one: 'one',
+          two: 'two',
+          three: 'three',
+          few: 'few',
+          many: 'many',
+          other: 'other',
+        },
+      })
+
+      await i18nManager.loadTranslations()
+
+      const i18n = new I18n('en', emitter, logger, i18nManager)
+      assert.equal(
+        i18n.formatMessage('messages.request_approval', { count }),
+        count === 0 ? 'No request was approved' : 'Many requests were approved'
+      )
     })
 
-    await i18nManager.loadTranslations()
+  test('should return translation error string if no count identifier is provided')
+    .with([0, 1, 2, 3, 10, 50, 200])
+    .run(async ({ assert }, count) => {
+      const app = await setup()
+      const emitter = app.container.resolveBinding('Adonis/Core/Event')
+      const logger = app.container.resolveBinding('Adonis/Core/Logger')
 
-    const i18n = new I18n('en', emitter, logger, i18nManager)
+      const i18nManager = new I18nManager(app, emitter, logger, {
+        defaultLocale: 'en',
+        translationsFormat: 'icu',
+        provideValidatorMessages: true,
+        loaders: {
+          fs: {
+            enabled: true,
+            location: join(fs.basePath, 'resources/lang'),
+          },
+        },
+      })
 
-    assert.equal(
-      i18n.formatMessage('messages.request_approval', { count: 2 }),
-      'translation missing: en, messages.request_approval'
-    )
-  })
+      await i18nManager.loadTranslations()
+
+      const i18n = new I18n('en', emitter, logger, i18nManager)
+
+      assert.equal(
+        i18n.formatMessage('messages.request_approval', { count }),
+        (function () {
+          switch (count) {
+            case 0:
+              return 'translation missing: en, messages.request_approval_zero'
+            case 1:
+              return 'translation missing: en, messages.request_approval_one. expected fallback identifier: messages.request_approval_other'
+            case 2:
+              return 'translation missing: en, messages.request_approval_two. expected fallback identifier: messages.request_approval_other'
+            case 3:
+              return 'translation missing: en, messages.request_approval_three. expected fallback identifier: messages.request_approval_other'
+            case 10:
+              return 'translation missing: en, messages.request_approval_few. expected fallback identifier: messages.request_approval_other'
+            case 50:
+              return 'translation missing: en, messages.request_approval_many. expected fallback identifier: messages.request_approval_other'
+            default:
+              return 'translation missing: en, messages.request_approval_other. expected fallback identifier: messages.request_approval_other'
+          }
+        })()
+      )
+    })
 
   test('format a message by its identifier using short method i18n.t()', async ({ assert }) => {
     const app = await setup()
@@ -279,7 +346,7 @@ test.group('I18n', (group) => {
     await fs.add(
       'resources/lang/en/messages.json',
       JSON.stringify({
-        greeting: 'The price is {price, number, ::currency/INR}',
+        price: 'The price is {price, number, ::currency/INR}',
       })
     )
 
@@ -298,7 +365,7 @@ test.group('I18n', (group) => {
     await i18nManager.loadTranslations()
 
     const i18n = new I18n('en', emitter, logger, i18nManager)
-    assert.equal(i18n.t('messages.greeting', { price: 100 }), 'The price is ₹100.00')
+    assert.equal(i18n.t('messages.price', { price: 100 }), 'The price is ₹100.00')
   })
 
   test('use fallback messages when actual message is missing', async ({ assert }) => {
