@@ -1,6 +1,6 @@
 {
   "name": "@gotedo/i18n",
-  "version": "1.7.2",
+  "version": "1.7.3",
   "description": "Internationalization for AdonisJS apps",
   "main": "build/providers/I18nProvider.js",
   "files": [
