@@ -180,6 +180,43 @@ test.group('I18n', (group) => {
       )
     })
 
+  test('should return translation when both context and count are provided')
+    .with([0, 1, 2])
+    .run(async ({ assert }, count) => {
+      const app = await setup()
+      const emitter = app.container.resolveBinding('Adonis/Core/Event')
+      const logger = app.container.resolveBinding('Adonis/Core/Logger')
+
+      await fs.add(
+        'resources/lang/en/messages.json',
+        JSON.stringify({
+          read_time_minute_zero: '{count} minute',
+          read_time_minute_one: '1 minute {count} second',
+          read_time_minute_other: '1 minute {count} seconds',
+        })
+      )
+
+      const i18nManager = new I18nManager(app, emitter, logger, {
+        defaultLocale: 'en',
+        translationsFormat: 'icu',
+        provideValidatorMessages: true,
+        loaders: {
+          fs: {
+            enabled: true,
+            location: join(fs.basePath, 'resources/lang'),
+          },
+        },
+      })
+
+      await i18nManager.loadTranslations()
+
+      const i18n = new I18n('en', emitter, logger, i18nManager)
+      assert.equal(
+        i18n.formatMessage('messages.read_time', { count, context: 'minute' }),
+        count === 0 ? '0 minute' : count === 1 ? '1 minute 1 second' : '1 minute 2 seconds'
+      )
+    })
+
   test('format a message by its identifier and plurals with custom plural keys: {$self}')
     .with([0, 1, 2, 3, 5, 20, 200])
     .run(async ({ assert }, count) => {

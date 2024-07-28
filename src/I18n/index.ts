@@ -321,7 +321,7 @@ export class I18n extends Formatter implements I18nContract {
     fallbackMessage?: string
   ): string {
     this.lazyLoadTranslations()
-    let resolvedIdentifier = ''
+    let resolvedIdentifier = identifier
     let expectedFallbackIdentifier = ''
 
     const fallback = (missingKey: string) => {
@@ -335,18 +335,24 @@ export class I18n extends Formatter implements I18nContract {
       )
     }
 
-    if (data && 'context' in data) {
-      resolvedIdentifier = this.resolveContextIdentifier(identifier, data?.context)
-    } else if (data && 'count' in data) {
-      const resolvedCountIdentifier = this.resolvePluralIdentifier(identifier, data?.count)
-      if (typeof resolvedCountIdentifier === 'string') {
-        resolvedIdentifier = resolvedCountIdentifier
-      } else {
-        resolvedIdentifier = resolvedCountIdentifier.missingKey
-        expectedFallbackIdentifier = resolvedCountIdentifier.expectedFallbackIdentifier || ''
+    if (data) {
+      if ('context' in data) {
+        resolvedIdentifier = this.resolveContextIdentifier(resolvedIdentifier, data?.context)
       }
-    } else {
-      resolvedIdentifier = identifier
+
+      if ('count' in data) {
+        const resolvedCountIdentifier = this.resolvePluralIdentifier(
+          resolvedIdentifier,
+          data?.count
+        )
+
+        if (typeof resolvedCountIdentifier === 'string') {
+          resolvedIdentifier = resolvedCountIdentifier
+        } else {
+          resolvedIdentifier = resolvedCountIdentifier.missingKey
+          expectedFallbackIdentifier = resolvedCountIdentifier.expectedFallbackIdentifier || ''
+        }
+      }
     }
 
     const message = this.getMessage(resolvedIdentifier)
