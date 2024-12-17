@@ -21,5 +21,5 @@ export function prettyPrint(data: MissingTranslationEventData) {
   const name = `[ ${colors.yellow('i18n')} ] `
   const highlightedText = `${colors.dim(`${data.locale}, ${data.identifier}`)}`
 
-  console.log(`${name} translation missing: ${highlightedText}`)
+  console.error(`${name} translation missing: ${highlightedText}`)
 }
