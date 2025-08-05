@@ -46,9 +46,22 @@ test.group('Fs loader | JSON', (group) => {
     const messages = await fsLoader.load()
     assert.deepEqual(messages, {
       en: {
-        'messages.greeting': 'hello world',
-        'shared.messages.greeting': 'hello world',
-        'messages.validator.greeting': 'hello world',
+        flattened: {
+          'messages.greeting': 'hello world',
+          'shared.messages.greeting': 'hello world',
+          'messages.validator.greeting': 'hello world',
+        },
+        raw: {
+          'messages.validator': {
+            greeting: 'hello world',
+          },
+          'messages': {
+            greeting: 'hello world',
+          },
+          'shared.messages': {
+            greeting: 'hello world',
+          },
+        },
       },
     })
   })
@@ -71,8 +84,18 @@ test.group('Fs loader | JSON', (group) => {
     const messages = await fsLoader.load()
     assert.deepEqual(messages, {
       en: {
-        'validator.shared.required': 'field is required',
-        'validator.shared.signup.required': 'field is required to signup',
+        flattened: {
+          'validator.shared.required': 'field is required',
+          'validator.shared.signup.required': 'field is required to signup',
+        },
+        raw: {
+          'validator.shared': {
+            required: 'field is required',
+            signup: {
+              required: 'field is required to signup',
+            },
+          },
+        },
       },
     })
   })
@@ -92,17 +115,27 @@ test.group('Fs loader | JSON', (group) => {
     await fs.add(
       'resources/lang/fr.json',
       JSON.stringify({
-        greeting: 'hello world',
+        greeting: 'bonjour le monde',
       })
     )
 
     const messages = await fsLoader.load()
     assert.deepEqual(messages, {
       en: {
-        greeting: 'hello world',
+        flattened: {
+          greeting: 'hello world',
+        },
+        raw: {
+          greeting: 'hello world',
+        },
       },
       fr: {
-        greeting: 'hello world',
+        flattened: {
+          greeting: 'bonjour le monde',
+        },
+        raw: {
+          greeting: 'bonjour le monde',
+        },
       },
     })
   })
@@ -130,7 +163,7 @@ test.group('Fs loader | JSON', (group) => {
     } catch (error) {
       assert.isTrue(
         [
-          'Expected double-quoted property name in JSON at position 10',
+          'Expected double-quoted property name in JSON at position 10 (line 1 column 11)',
           'Unexpected token } in JSON at position 10',
         ].includes(error.message)
       )
@@ -170,9 +203,22 @@ test.group('Fs loader | YAML', (group) => {
     const messages = await fsLoader.load()
     assert.deepEqual(messages, {
       en: {
-        'messages.greeting': 'hello world',
-        'shared.messages.greeting': 'hello world',
-        'messages.validator.greeting': 'hello world',
+        flattened: {
+          'messages.greeting': 'hello world',
+          'shared.messages.greeting': 'hello world',
+          'messages.validator.greeting': 'hello world',
+        },
+        raw: {
+          'messages.validator': {
+            greeting: 'hello world',
+          },
+          'shared.messages': {
+            greeting: 'hello world',
+          },
+          'messages': {
+            greeting: 'hello world',
+          },
+        },
       },
     })
   })
@@ -194,8 +240,18 @@ test.group('Fs loader | YAML', (group) => {
     const messages = await fsLoader.load()
     assert.deepEqual(messages, {
       en: {
-        'validator.shared.required': 'field is required',
-        'validator.shared.signup.required': 'field is required to signup',
+        flattened: {
+          'validator.shared.required': 'field is required',
+          'validator.shared.signup.required': 'field is required to signup',
+        },
+        raw: {
+          'validator.shared': {
+            required: 'field is required',
+            signup: {
+              required: 'field is required to signup',
+            },
+          },
+        },
       },
     })
   })
@@ -215,17 +271,27 @@ test.group('Fs loader | YAML', (group) => {
     await fs.add(
       'resources/lang/fr.yaml',
       `
-      greeting: hello world
+      greeting: bonjour le monde
       `
     )
 
     const messages = await fsLoader.load()
     assert.deepEqual(messages, {
       en: {
-        greeting: 'hello world',
+        flattened: {
+          greeting: 'hello world',
+        },
+        raw: {
+          greeting: 'hello world',
+        },
       },
       fr: {
-        greeting: 'hello world',
+        flattened: {
+          greeting: 'bonjour le monde',
+        },
+        raw: {
+          greeting: 'bonjour le monde',
+        },
       },
     })
   })

@@ -14,7 +14,7 @@ import { readFile } from 'fs'
 import { join, extname } from 'path'
 import { flatten } from '@poppinss/utils'
 import { fsReadAll } from '@poppinss/utils/build/helpers'
-import { FsLoaderOptions, LoaderContract } from '@ioc:Adonis/Addons/I18n'
+import { FsLoaderOptions, LoaderContract, type Translations } from '@ioc:Adonis/Addons/I18n'
 
 /**
  * Uses the filesystem to load messages from the JSON
@@ -152,7 +152,7 @@ export class FsLoader implements LoaderContract {
   /**
    * Loads messages from the lang directory
    */
-  public async load() {
+  public async load(): Promise<Translations> {
     const messagesBag = {}
 
     await Promise.all(
@@ -166,8 +166,11 @@ export class FsLoader implements LoaderContract {
     )
 
     return Object.keys(messagesBag).reduce((result, lang) => {
-      result[lang] = flatten(messagesBag[lang])
+      result[lang] = {
+        flattened: flatten(messagesBag[lang]),
+        raw: messagesBag[lang],
+      }
       return result
-    }, {})
+    }, {} as Translations)
   }
 }

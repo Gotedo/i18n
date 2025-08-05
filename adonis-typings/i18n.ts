@@ -69,7 +69,10 @@ declare module '@ioc:Adonis/Addons/I18n' {
    * Shape of translations
    */
   export type Translations = {
-    [lang: string]: Record<string, string>
+    [lang: string]: {
+      flattened: Record<string, string>
+      raw: Record<string, string | Record<string, string>>
+    }
   }
 
   /**
@@ -338,7 +341,7 @@ declare module '@ioc:Adonis/Addons/I18n' {
     /**
      * Returns translations for a given locale
      */
-    getTranslationsFor(locale: string): Record<string, string>
+    getTranslationsFor<Locale extends string>(locale: Locale): Translations[Locale]
 
     /**
      * Returns reference to the application formatter

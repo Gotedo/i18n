@@ -375,6 +375,65 @@ test.group('I18n', (group) => {
       )
     })
 
+  test('format a message by its identifier when requested as an object').run(async ({ assert }) => {
+    const app = await setup()
+    const emitter = app.container.resolveBinding('Adonis/Core/Event')
+    const logger = app.container.resolveBinding('Adonis/Core/Logger')
+    const obj = {
+      translations: {
+        misc: {
+          newWindowTitle: 'New Window, {title}',
+          updateNeeded:
+            'Hello, {user}. There were changes since your last visit, please update your consent.',
+          array: ['1', '2', '{user}', { key: '{title}' }],
+        },
+      },
+    }
+    const translatedObj = {
+      translations: {
+        misc: {
+          newWindowTitle: 'New Window, Alert',
+          updateNeeded:
+            'Hello, Ndianabasi. There were changes since your last visit, please update your consent.',
+          array: ['1', '2', 'Ndianabasi', { key: 'Alert' }],
+        },
+      },
+    }
+
+    await fs.add('resources/lang/en/messages.json', JSON.stringify(obj))
+
+    const i18nManager = new I18nManager(app, emitter, logger, {
+      defaultLocale: 'en',
+      translationsFormat: 'icu',
+      provideValidatorMessages: true,
+      loaders: {
+        fs: {
+          enabled: true,
+          location: join(fs.basePath, 'resources/lang'),
+        },
+      },
+    })
+
+    await i18nManager.loadTranslations()
+
+    const i18n = new I18n('en', emitter, logger, i18nManager)
+    const data = {
+      title: 'Alert',
+      user: 'Ndianabasi',
+    }
+    const translation1 = i18n.formatMessage('messages.translations', {
+      returnObject: true,
+      ...data,
+    })
+    const translation2 = i18n.formatMessage('messages.translations.misc', {
+      returnObject: true,
+      ...data,
+    })
+
+    assert.deepEqual(translation1, JSON.stringify(translatedObj.translations))
+    assert.deepEqual(translation2, JSON.stringify(translatedObj.translations.misc))
+  })
+
   test('format a message by its identifier using short method i18n.t()', async ({ assert }) => {
     const app = await setup()
     const emitter = app.container.resolveBinding('Adonis/Core/Event')

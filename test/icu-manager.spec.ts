@@ -176,7 +176,14 @@ test.group('I18nManager', (group) => {
         async load() {
           return {
             en: {
-              'messages.foo': 'hello foo',
+              flattened: {
+                'messages.foo': 'hello foo',
+              },
+              raw: {
+                messages: {
+                  foo: 'hello foo',
+                },
+              },
             },
           }
         },
@@ -357,10 +364,24 @@ test.group('I18nManager', (group) => {
         async load() {
           return {
             en: {
-              'messages.foo': 'hello foo',
+              flattened: {
+                'messages.foo': 'hello foo',
+              },
+              raw: {
+                messages: {
+                  foo: 'hello foo',
+                },
+              },
             },
             fr: {
-              'messages.foo': 'Bonjour foo',
+              flattened: {
+                'messages.foo': 'Bonjour foo',
+              },
+              raw: {
+                messages: {
+                  foo: 'Bonjour foo',
+                },
+              },
             },
           }
         },
@@ -434,10 +455,24 @@ test.group('I18nManager', (group) => {
         async load() {
           return {
             en: {
-              'messages.foo': 'hello foo',
+              flattened: {
+                'messages.foo': 'hello foo',
+              },
+              raw: {
+                messages: {
+                  foo: 'hello foo',
+                },
+              },
             },
             fr: {
-              'messages.foo': 'Bonjour foo',
+              flattened: {
+                'messages.foo': 'Bonjour foo',
+              },
+              raw: {
+                messages: {
+                  foo: 'Bonjour foo',
+                },
+              },
             },
           }
         },
@@ -451,7 +486,14 @@ test.group('I18nManager', (group) => {
         async load() {
           return {
             en: {
-              'messages.foo': 'hello foo',
+              flattened: {
+                'messages.foo': 'hello foo',
+              },
+              raw: {
+                messages: {
+                  foo: 'hello foo',
+                },
+              },
             },
           }
         },

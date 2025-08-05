@@ -15,8 +15,10 @@ import {
   I18nContract,
   I18nManagerContract,
   ValidatorWildcardCallback,
+  type TranslationsFormatterContract,
 } from '@ioc:Adonis/Addons/I18n'
 import { Formatter } from '../Formatters/Core'
+import get from 'lodash.get'
 
 /**
  * I18n class works with a dedicated locale at a given point
@@ -27,11 +29,13 @@ export class I18n extends Formatter implements I18nContract {
    * Locale translations
    */
   private localeTranslations: Record<string, string>
+  private rawLocaleTranslations: Record<string, string | Record<string, string>>
 
   /**
    * Fallback translations
    */
   private fallbackTranslations: Record<string, string>
+  private rawFallbackTranslations: Record<string, string | Record<string, string>>
 
   /**
    * The fallback locale for the current instance.
@@ -55,8 +59,13 @@ export class I18n extends Formatter implements I18nContract {
    * to return cached translations for the selected locale.
    */
   private loadTranslations() {
-    this.localeTranslations = this.i18nManager.getTranslationsFor(this.locale)
-    this.fallbackTranslations = this.i18nManager.getTranslationsFor(this.fallbackLocale)
+    const translations = this.i18nManager.getTranslationsFor(this.locale)
+    this.localeTranslations = translations['flattened'] || {}
+    this.rawLocaleTranslations = translations['raw'] || {}
+
+    const fallbackTranslations = this.i18nManager.getTranslationsFor(this.fallbackLocale)
+    this.fallbackTranslations = fallbackTranslations['flattened'] || {}
+    this.rawFallbackTranslations = fallbackTranslations['raw'] || {}
   }
 
   /**
@@ -64,7 +73,10 @@ export class I18n extends Formatter implements I18nContract {
    * during real world use cases
    */
   private lazyLoadTranslations() {
-    if (!this.localeTranslations && !this.fallbackTranslations) {
+    if (
+      (!this.localeTranslations && !this.fallbackTranslations) ||
+      (!this.rawLocaleTranslations && !this.rawFallbackTranslations)
+    ) {
       this.loadTranslations()
     }
   }
@@ -83,22 +95,46 @@ export class I18n extends Formatter implements I18nContract {
   /**
    * Returns the message for a given identifier
    */
-  private getMessage(identifier: string): { message: string; isFallback: boolean } | null {
-    let message = this.localeTranslations[identifier]
+  private getMessage(
+    identifier: string,
+    returnObject: boolean
+  ): { message: string | Record<string, string>; isFallback: boolean } | null {
+    let message: string | Record<string, string>
 
     /**
      * Return the translation (if exists)
      */
-    if (message) {
-      return { message, isFallback: false }
+    if (returnObject) {
+      message = get(this.rawLocaleTranslations, identifier)
+      if (message) {
+        return {
+          message,
+          isFallback: false,
+        }
+      }
+    } else {
+      message = this.localeTranslations[identifier]
+      if (message) {
+        return { message, isFallback: false }
+      }
     }
 
     /**
      * Look for translation inside the fallback messages
      */
-    message = this.fallbackTranslations[identifier]
-    if (message) {
-      return { message, isFallback: true }
+    if (returnObject) {
+      message = get(this.rawFallbackTranslations, identifier)
+      if (message) {
+        return {
+          message,
+          isFallback: true,
+        }
+      }
+    } else {
+      message = this.fallbackTranslations[identifier]
+      if (message) {
+        return { message, isFallback: true }
+      }
     }
 
     return null
@@ -112,7 +148,7 @@ export class I18n extends Formatter implements I18nContract {
     data: Record<string, string>,
     forceNotify = false
   ): string | null {
-    const message = this.getMessage(identifier)
+    const message = this.getMessage(identifier, false)
 
     /**
      * Return early when there is no message available
@@ -317,7 +353,7 @@ export class I18n extends Formatter implements I18nContract {
    */
   public formatMessage(
     identifier: string,
-    data?: Record<string, any> & { context?: string; count?: number },
+    data?: Record<string, any> & { context?: string; count?: number; returnObject?: boolean },
     fallbackMessage?: string
   ): string {
     this.lazyLoadTranslations()
@@ -355,7 +391,7 @@ export class I18n extends Formatter implements I18nContract {
       }
     }
 
-    const message = this.getMessage(resolvedIdentifier)
+    const message = this.getMessage(resolvedIdentifier, data?.returnObject ?? false)
 
     /**
      * Notify about the message translation
@@ -383,17 +419,83 @@ export class I18n extends Formatter implements I18nContract {
   }
 
   /**
-   * Shorthand method for formatUsage
-   * @alias formatUsage
+   * Shorthand method for formatMessage
+   * @alias formatMessage
    */
-  public t(identifier: string, data?: Record<string, any>, fallbackMessage?: string): string {
+  public t(
+    identifier: string,
+    data?: Record<string, any> & { context?: string; count?: number; returnObject?: boolean },
+    fallbackMessage?: string
+  ): string {
     return this.formatMessage(identifier, data, fallbackMessage)
+  }
+
+  #translateNestedObject(
+    obj: Record<string, any>,
+    formatter: TranslationsFormatterContract,
+    locale: string,
+    data: any
+  ): Record<string, any> {
+    const result: Record<string, any> = {}
+
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        const value = obj[key]
+
+        if (Array.isArray(value)) {
+          // Process arrays by mapping over elements
+          result[key] = value.map((item: any) => {
+            if (Array.isArray(item)) {
+              // Recursively process nested arrays
+              return item.map((nestedItem: any) =>
+                typeof nestedItem === 'string'
+                  ? formatter.format(nestedItem, locale, data)
+                  : typeof nestedItem === 'object' && nestedItem !== null
+                  ? this.#translateNestedObject(nestedItem, formatter, locale, data)
+                  : nestedItem
+              )
+            } else if (typeof item === 'string') {
+              // Apply formatter to string elements
+              return formatter.format(item, locale, data)
+            } else if (typeof item === 'object' && item !== null) {
+              // Recursively process object elements
+              return this.#translateNestedObject(item, formatter, locale, data)
+            } else {
+              // Copy non-string, non-object, non-array elements as-is
+              return item
+            }
+          })
+        } else if (typeof value === 'object' && value !== null) {
+          // Recursively process nested objects
+          result[key] = this.#translateNestedObject(value, formatter, locale, data)
+        } else if (typeof value === 'string') {
+          // Apply formatter to string values
+          result[key] = formatter.format(value, locale, data)
+        } else {
+          // Copy non-string, non-object, non-array values as-is
+          result[key] = value
+        }
+      }
+    }
+
+    return result
   }
 
   /**
    * Formats a message using the messages formatter
    */
-  public formatRawMessage(message: string, data?: Record<string, any>): string {
-    return this.i18nManager.getFormatter().format(message, this.locale, data)
+  public formatRawMessage(
+    message: string | Record<string, string>,
+    data?: Record<string, any>
+  ): string {
+    const formatter = this.i18nManager.getFormatter()
+
+    if (typeof message === 'string') {
+      return formatter.format(message, this.locale, data)
+    }
+
+    // Format all messages in the object
+    const translatedObj = this.#translateNestedObject(message, formatter, this.locale, data)
+    return JSON.stringify(translatedObj)
   }
 }

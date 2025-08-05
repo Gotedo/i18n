@@ -22,6 +22,7 @@ import {
   FormatterExtendCallback,
   TranslationsFormatterContract,
   I18nPluralConfig,
+  type Translations,
 } from '@ioc:Adonis/Addons/I18n'
 
 import { I18n } from '../I18n'
@@ -66,7 +67,7 @@ export class I18nManager implements I18nManagerContract {
    * them when "loadTranslations" or "reloadTranslations"
    * is called.
    */
-  private translations: { [lang: string]: Record<string, string> } = {}
+  private translations: Translations = {}
 
   /**
    * Find if translations has been loaded atleast once or not
@@ -285,10 +286,11 @@ export class I18nManager implements I18nManagerContract {
          * Initialize language with an empty object
          */
         if (!this.translations[lang]) {
-          this.translations[lang] = {}
+          this.translations[lang] = { flattened: {}, raw: {} }
         }
 
-        Object.assign(this.translations[lang], translations[lang])
+        Object.assign(this.translations[lang].flattened, translations[lang].flattened)
+        Object.assign(this.translations[lang].raw, translations[lang].raw)
       })
     })
   }
